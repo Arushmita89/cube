@@ -38,10 +38,10 @@ const SOLVED: CubeState = {
 };
 
 const SOLUTION_SEQUENCE = [
-  { face: "R" as FaceKey, ccw: false, hint: "Step 1: Rotate Right (R) ↻" },
-  { face: "U" as FaceKey, ccw: false, hint: "Step 2: Rotate Top (U) ↻" },
-  { face: "R" as FaceKey, ccw: true,  hint: "Step 3: Rotate Right (R') ↺" },
-  { face: "U" as FaceKey, ccw: true,  hint: "Step 4: Rotate Top (U') ↺" },
+  { face: "R" as FaceKey, ccw: false },
+  { face: "U" as FaceKey, ccw: false },
+  { face: "R" as FaceKey, ccw: true },
+  { face: "U" as FaceKey, ccw: true },
 ];
 
 // ── Cube logic ─────────────────────────────────────────────────────────────────
@@ -123,9 +123,16 @@ const GUIDE_STEPS = [
       <div className="grid grid-cols-2 gap-x-6 gap-y-1.5 text-sm text-[color:var(--muted-foreground)]">
         {(Object.entries(FACE_COLOR) as [FaceKey, { sticker: Sticker; label: string }][]).map(([key, { sticker, label }]) => (
           <div key={key} className="flex items-center gap-2">
-            <span className="inline-block w-3 h-3 rounded-sm flex-shrink-0"
-              style={{ background: STICKER_COLORS[sticker], border: "1px solid rgba(0,0,0,0.15)" }} />
-            <span><strong className="text-foreground">{key}</strong> — {FACE_LABEL[key]} ({label})</span>
+            <span
+              className="inline-block w-3 h-3 rounded-sm flex-shrink-0"
+              style={{
+                background: STICKER_COLORS[sticker],
+                border: "1px solid rgba(0,0,0,0.15)",
+              }}
+            />
+            <span>
+              <strong className="text-foreground">{key}</strong> — {FACE_LABEL[key]} ({label})
+            </span>
           </div>
         ))}
       </div>
@@ -135,8 +142,12 @@ const GUIDE_STEPS = [
     title: "Your goal",
     content: (
       <div className="space-y-2 text-sm text-[color:var(--muted-foreground)] leading-relaxed">
-        <p>The cube is scrambled with 4 moves. Solve it using the <strong className="text-foreground">Sexy Move: R U R' U'</strong></p>
-        <p>Stuck? Tap <em className="text-foreground">give up — solve for me</em> below.</p>
+        <p>
+          The cube is already scrambled for you.
+        </p>
+        <p className="text-xs italic">
+          Follow the hint shown above the cube — one correct move at a time.
+        </p>
       </div>
     ),
   },
@@ -195,7 +206,7 @@ function Guide({ onDone }: { onDone: () => void }) {
       </div>
       {!isLast && (
         <button onClick={onDone}
-          className="font-display text-[11px] italic tracking-[0.3em] text-[color:var(--muted-foreground)] underline decoration-[var(--gold)]/30 underline-offset-4 hover:text-foreground transition-colors">
+          className="font-display text-semibold text-[11px] italic tracking-[0.3em] text-[color:black] underline decoration-[var(--gold)]/30 underline-offset-4 hover:text-foreground transition-colors">
           skip guide
         </button>
       )}
@@ -259,7 +270,7 @@ function RubiksCubeInner({ onSolved }: { onSolved: () => void }) {
   const solvedFiredRef = useRef(false);
   const moveIndexRef = useRef(0);
   const [moveIndex, setMoveIndex] = useState(0);
-  const [hint, setHint] = useState(SOLUTION_SEQUENCE[0].hint);
+  //const [hint, setHint] = useState(SOLUTION_SEQUENCE[0].hint);
 
   const handleTurn = useCallback((face: FaceKey, ccw: boolean) => {
     const current = moveIndexRef.current;
@@ -270,9 +281,10 @@ function RubiksCubeInner({ onSolved }: { onSolved: () => void }) {
       setState((prev) => (ccw ? turnCCW(prev, face) : turnCW(prev, face)));
       moveIndexRef.current = current + 1;
       setMoveIndex(current + 1);
-      setHint(current === 3 ? "🎉 SOLVED!" : SOLUTION_SEQUENCE[current + 1].hint);
+      //setHint(current === 3 ? "🎉 SOLVED!" : SOLUTION_SEQUENCE[current + 1].hint);
     } else {
-      setHint(`Try again! ${currentGoal.hint}`);
+      console.log("Wrong Move");
+      //setHint(`Try again! ${currentGoal.hint}`);
     }
   }, []);
 
@@ -300,13 +312,9 @@ function RubiksCubeInner({ onSolved }: { onSolved: () => void }) {
 
   return (
     <div className="flex flex-col items-center gap-6">
-      <div className="text-center space-y-1">
-        <p className="text-sm italic text-muted-foreground">"Try The Sexy Move"</p>
-        {hint && (
-          <p className="text-sm font-semibold" style={{ color: "oklch(0.82 0.14 80)" }}>{hint}</p>
-        )}
-      </div>
-
+      <p className="text-sm font-semibold" style={{ color: "oklch(0.82 0.14 80)" }}>
+        Step {moveIndex} / 4
+      </p>
       <div
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
