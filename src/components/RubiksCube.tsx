@@ -15,10 +15,6 @@ const STICKER_COLORS: Record<Sticker, string> = {
   G: "oklch(0.65 0.16 150)",
 };
 
-const STICKER_NAMES: Record<Sticker, string> = {
-  W: "white", Y: "yellow", O: "orange", R: "red", B: "blue", G: "green",
-};
-
 const FACE_LABEL: Record<FaceKey, string> = {
   U: "Up", D: "Down", L: "Left", R: "Right", F: "Front", B: "Back",
 };
@@ -41,8 +37,14 @@ const SOLVED: CubeState = {
   B: Array(9).fill("B") as Sticker[],
 };
 
-// Move this OUTSIDE RubiksCubeInner, at module level
-// ── Cube logic (unchanged) ─────────────────────────────────────────────────────
+const SOLUTION_SEQUENCE = [
+  { face: "R" as FaceKey, ccw: false, hint: "Step 1: Rotate Right (R) ↻" },
+  { face: "U" as FaceKey, ccw: false, hint: "Step 2: Rotate Top (U) ↻" },
+  { face: "R" as FaceKey, ccw: true,  hint: "Step 3: Rotate Right (R') ↺" },
+  { face: "U" as FaceKey, ccw: true,  hint: "Step 4: Rotate Top (U') ↺" },
+];
+
+// ── Cube logic ─────────────────────────────────────────────────────────────────
 function clone(s: CubeState): CubeState {
   return { U: [...s.U], D: [...s.D], L: [...s.L], R: [...s.R], F: [...s.F], B: [...s.B] };
 }
@@ -62,36 +64,12 @@ function turnCW(state: CubeState, face: FaceKey): CubeState {
   const s = clone(state);
   s[face] = rotateCW(s[face]);
   switch (face) {
-    case "U":
-      cycle(s, [
-        { face: "F", idx: [0, 1, 2] }, { face: "L", idx: [0, 1, 2] },
-        { face: "B", idx: [0, 1, 2] }, { face: "R", idx: [0, 1, 2] },
-      ]); break;
-    case "D":
-      cycle(s, [
-        { face: "F", idx: [6, 7, 8] }, { face: "R", idx: [6, 7, 8] },
-        { face: "B", idx: [6, 7, 8] }, { face: "L", idx: [6, 7, 8] },
-      ]); break;
-    case "F":
-      cycle(s, [
-        { face: "U", idx: [6, 7, 8] }, { face: "R", idx: [0, 3, 6] },
-        { face: "D", idx: [2, 1, 0] }, { face: "L", idx: [8, 5, 2] },
-      ]); break;
-    case "B":
-      cycle(s, [
-        { face: "U", idx: [2, 1, 0] }, { face: "L", idx: [0, 3, 6] },
-        { face: "D", idx: [6, 7, 8] }, { face: "R", idx: [8, 5, 2] },
-      ]); break;
-    case "L":
-      cycle(s, [
-        { face: "U", idx: [0, 3, 6] }, { face: "F", idx: [0, 3, 6] },
-        { face: "D", idx: [0, 3, 6] }, { face: "B", idx: [8, 5, 2] },
-      ]); break;
-    case "R":
-      cycle(s, [
-        { face: "U", idx: [8, 5, 2] }, { face: "B", idx: [0, 3, 6] },
-        { face: "D", idx: [8, 5, 2] }, { face: "F", idx: [8, 5, 2] },
-      ]); break;
+    case "U": cycle(s, [{ face: "F", idx: [0, 1, 2] }, { face: "L", idx: [0, 1, 2] }, { face: "B", idx: [0, 1, 2] }, { face: "R", idx: [0, 1, 2] }]); break;
+    case "D": cycle(s, [{ face: "F", idx: [6, 7, 8] }, { face: "R", idx: [6, 7, 8] }, { face: "B", idx: [6, 7, 8] }, { face: "L", idx: [6, 7, 8] }]); break;
+    case "F": cycle(s, [{ face: "U", idx: [6, 7, 8] }, { face: "R", idx: [0, 3, 6] }, { face: "D", idx: [2, 1, 0] }, { face: "L", idx: [8, 5, 2] }]); break;
+    case "B": cycle(s, [{ face: "U", idx: [2, 1, 0] }, { face: "L", idx: [0, 3, 6] }, { face: "D", idx: [6, 7, 8] }, { face: "R", idx: [8, 5, 2] }]); break;
+    case "L": cycle(s, [{ face: "U", idx: [0, 3, 6] }, { face: "F", idx: [0, 3, 6] }, { face: "D", idx: [0, 3, 6] }, { face: "B", idx: [8, 5, 2] }]); break;
+    case "R": cycle(s, [{ face: "U", idx: [8, 5, 2] }, { face: "B", idx: [0, 3, 6] }, { face: "D", idx: [8, 5, 2] }, { face: "F", idx: [8, 5, 2] }]); break;
   }
   return s;
 }
@@ -101,18 +79,12 @@ function turnCCW(state: CubeState, face: FaceKey): CubeState {
   s = turnCW(s, face);
   return s;
 }
-function isSolved(s: CubeState): boolean {
-  return (Object.keys(s) as FaceKey[]).every((f) => s[f].every((c) => c === s[f][0]));
-}
 function scrambled(): CubeState {
   let s = clone(SOLVED);
-
-  // Inverse sexy move → solvable using sexy move
   s = turnCW(s, "U");
   s = turnCW(s, "R");
   s = turnCCW(s, "U");
   s = turnCCW(s, "R");
-
   return s;
 }
 
@@ -132,8 +104,7 @@ const GUIDE_STEPS = [
     content: (
       <p className="text-sm text-muted-foreground leading-relaxed font-semibold">
         <strong className="text-foreground">Drag on empty space</strong> around the cube to spin
-        it and view all 6 faces. Drag slowly for precise control — works with mouse, trackpad, or
-        touch.
+        it and view all 6 faces.
       </p>
     ),
   },
@@ -141,15 +112,8 @@ const GUIDE_STEPS = [
     title: "Turn a face",
     content: (
       <div className="space-y-2 text-sm leading-relaxed">
-        <p>
-          <strong className="text-foreground">Click any face</strong> to rotate it{" "}
-          <strong className="text-foreground">clockwise ↻</strong> by 90°.
-        </p>
-        <p>
-          Hold <kbd className="px-1.5 py-0.5 rounded border text-xs font-mono bg-muted text-foreground">Shift</kbd>{" "}
-          while clicking to rotate{" "}
-          <strong className="text-foreground">counter-clockwise ↺</strong> instead.
-        </p>
+        <p><strong className="text-foreground">Tap any face</strong> to rotate it <strong className="text-foreground">clockwise ↻</strong>.</p>
+        <p>Use the <strong className="text-foreground">↻ / ↺ toggle</strong> below the cube to switch direction before tapping.</p>
       </div>
     ),
   },
@@ -157,19 +121,13 @@ const GUIDE_STEPS = [
     title: "The six faces",
     content: (
       <div className="grid grid-cols-2 gap-x-6 gap-y-1.5 text-sm text-[color:var(--muted-foreground)]">
-        {(Object.entries(FACE_COLOR) as [FaceKey, { sticker: Sticker; label: string }][]).map(
-          ([key, { sticker, label }]) => (
-            <div key={key} className="flex items-center gap-2">
-              <span
-                className="inline-block w-3 h-3 rounded-sm flex-shrink-0"
-                style={{ background: STICKER_COLORS[sticker], border: "1px solid rgba(0,0,0,0.15)" }}
-              />
-              <span>
-                <strong className="text-foreground">{key}</strong> — {FACE_LABEL[key]} ({label})
-              </span>
-            </div>
-          )
-        )}
+        {(Object.entries(FACE_COLOR) as [FaceKey, { sticker: Sticker; label: string }][]).map(([key, { sticker, label }]) => (
+          <div key={key} className="flex items-center gap-2">
+            <span className="inline-block w-3 h-3 rounded-sm flex-shrink-0"
+              style={{ background: STICKER_COLORS[sticker], border: "1px solid rgba(0,0,0,0.15)" }} />
+            <span><strong className="text-foreground">{key}</strong> — {FACE_LABEL[key]} ({label})</span>
+          </div>
+        ))}
       </div>
     ),
   },
@@ -177,14 +135,8 @@ const GUIDE_STEPS = [
     title: "Your goal",
     content: (
       <div className="space-y-2 text-sm text-[color:var(--muted-foreground)] leading-relaxed">
-        <p>
-          The cube starts <strong className="text-foreground">pre-scrambled with 3 moves</strong>.
-          Solve it so each face shows a single solid color.
-        </p>
-        <p>
-          A celebration fires when you solve it. Stuck? Click{" "}
-          <em className="text-foreground">give up — solve for me</em> below the cube at any time.
-        </p>
+        <p>The cube is scrambled with 4 moves. Solve it using the <strong className="text-foreground">Sexy Move: R U R' U'</strong></p>
+        <p>Stuck? Tap <em className="text-foreground">give up — solve for me</em> below.</p>
       </div>
     ),
   },
@@ -197,12 +149,9 @@ function Guide({ onDone }: { onDone: () => void }) {
 
   return (
     <div className="flex flex-col items-center gap-6 w-full max-w-sm mx-auto">
-      {/* Step counter */}
       <p className="font-display text-[10px] tracking-[0.35em] text-[color:var(--muted-foreground)] italic">
         HOW TO PLAY — {step + 1} / {total}
       </p>
-
-      {/* Card */}
       <AnimatePresence mode="wait">
         <motion.div
           key={step}
@@ -212,66 +161,41 @@ function Guide({ onDone }: { onDone: () => void }) {
           transition={{ duration: 0.22 }}
           className="w-full rounded-2xl border border-[color:var(--border)] bg-[color:var(--card)] p-6 space-y-3 shadow-sm"
         >
-          <h3 className="font-display text-base font-semibold tracking-tight">
-            {GUIDE_STEPS[step].title}
-          </h3>
+          <h3 className="font-display text-base font-semibold tracking-tight">{GUIDE_STEPS[step].title}</h3>
           <div>{GUIDE_STEPS[step].content}</div>
         </motion.div>
       </AnimatePresence>
-
-      {/* Dot progress */}
       <div className="flex gap-1.5">
         {GUIDE_STEPS.map((_, i) => (
-          <button
-            key={i}
-            onClick={() => setStep(i)}
-            aria-label={`Go to step ${i + 1}`}
+          <button key={i} onClick={() => setStep(i)} aria-label={`Go to step ${i + 1}`}
             className="w-2 h-2 rounded-full transition-all"
             style={{
-              background: i === step
-                ? "oklch(0.82 0.14 80)"
-                : "oklch(0.82 0.14 80 / 0.25)",
+              background: i === step ? "oklch(0.82 0.14 80)" : "oklch(0.82 0.14 80 / 0.25)",
               transform: i === step ? "scale(1.25)" : "scale(1)",
-            }}
-          />
+            }} />
         ))}
       </div>
-
-      {/* Navigation */}
       <div className="flex items-center gap-3 w-full">
         {step > 0 && (
-          <motion.button
-            whileHover={{ scale: 1.03 }}
-            whileTap={{ scale: 0.97 }}
+          <motion.button whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}
             onClick={() => setStep((s) => s - 1)}
-            className="flex-1 rounded-xl border border-[color:var(--border)] py-2.5 text-sm text-[color:var(--muted-foreground)] hover:bg-[color:var(--muted)] transition-colors"
-          >
+            className="flex-1 rounded-xl border border-[color:var(--border)] py-2.5 text-sm text-[color:var(--muted-foreground)] hover:bg-[color:var(--muted)] transition-colors">
             ← Back
           </motion.button>
         )}
-
-        <motion.button
-          whileHover={{ scale: 1.03 }}
-          whileTap={{ scale: 0.97 }}
+        <motion.button whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}
           onClick={() => (isLast ? onDone() : setStep((s) => s + 1))}
           className="flex-1 rounded-xl py-2.5 text-sm font-semibold transition-colors"
           style={{
-            background: isLast
-              ? "oklch(0.82 0.14 80)"
-              : "oklch(0.82 0.14 80 / 0.15)",
+            background: isLast ? "oklch(0.82 0.14 80)" : "oklch(0.82 0.14 80 / 0.15)",
             color: isLast ? "#1a1000" : "oklch(0.82 0.14 80)",
-          }}
-        >
+          }}>
           {isLast ? "Start solving →" : "Next →"}
         </motion.button>
       </div>
-
-      {/* Skip */}
       {!isLast && (
-        <button
-          onClick={onDone}
-          className="font-display text-[11px] italic tracking-[0.3em] text-[color:var(--muted-foreground)] underline decoration-[var(--gold)]/30 underline-offset-4 hover:text-foreground transition-colors"
-        >
+        <button onClick={onDone}
+          className="font-display text-[11px] italic tracking-[0.3em] text-[color:var(--muted-foreground)] underline decoration-[var(--gold)]/30 underline-offset-4 hover:text-foreground transition-colors">
           skip guide
         </button>
       )}
@@ -279,29 +203,19 @@ function Guide({ onDone }: { onDone: () => void }) {
   );
 }
 
-// ── Face component (unchanged) ─────────────────────────────────────────────────
+// ── Face component ─────────────────────────────────────────────────────────────
 function Face({
-  face,
-  stickers,
-  onTurn,
+  face, stickers, onTurn, ccwMode,
 }: {
   face: FaceKey;
   stickers: Sticker[];
   onTurn: (face: FaceKey, ccw: boolean) => void;
+  ccwMode: boolean;
 }) {
   const [pulse, setPulse] = useState(false);
   return (
-    <div
-      className="absolute left-1/2 top-1/2"
-      style={{
-        width: 180,
-        height: 180,
-        marginLeft: -90,
-        marginTop: -90,
-        transform: FACE_TRANSFORMS[face],
-        transformStyle: "preserve-3d",
-      }}
-    >
+    <div className="absolute left-1/2 top-1/2"
+      style={{ width: 180, height: 180, marginLeft: -90, marginTop: -90, transform: FACE_TRANSFORMS[face], transformStyle: "preserve-3d" }}>
       <button
         type="button"
         onPointerDown={(e) => e.stopPropagation()}
@@ -309,9 +223,11 @@ function Face({
           e.stopPropagation();
           setPulse(true);
           setTimeout(() => setPulse(false), 250);
-          onTurn(face, e.shiftKey);
+          // desktop: shift key overrides; mobile: use ccwMode toggle
+          const ccw = e.shiftKey || ccwMode;
+          onTurn(face, ccw);
         }}
-        title={`${FACE_LABEL[face]} — click to rotate, shift-click for reverse`}
+        title={`${FACE_LABEL[face]} — tap to rotate`}
         className="group relative grid h-full w-full grid-cols-3 grid-rows-3 gap-[3px] rounded-md p-[5px] transition-shadow"
         style={{
           background: "oklch(0.05 0.005 250)",
@@ -322,51 +238,39 @@ function Face({
         }}
       >
         {stickers.map((s, i) => (
-          <span
-            key={i}
-            className="block rounded-[5px]"
+          <span key={i} className="block rounded-[5px]"
             style={{
               background: STICKER_COLORS[s],
-              boxShadow:
-                "inset 0 -3px 5px oklch(0 0 0 / 0.3), inset 0 1px 2px oklch(1 0 0 / 0.4)",
-            }}
-          />
+              boxShadow: "inset 0 -3px 5px oklch(0 0 0 / 0.3), inset 0 1px 2px oklch(1 0 0 / 0.4)",
+            }} />
         ))}
       </button>
     </div>
   );
 }
 
-const SOLUTION_SEQUENCE = [
-  { face: "R" as FaceKey, ccw: false, hint: "Step 1: Rotate Right Up (R)" },
-  { face: "U" as FaceKey, ccw: false, hint: "Step 2: Rotate Top Left (U)" },
-  { face: "R" as FaceKey, ccw: true, hint: "Step 3: Rotate Right Down (R')" },
-  { face: "U" as FaceKey, ccw: true, hint: "Step 4: Rotate Top Right (U')" },
-];
-
 // ── Cube component ─────────────────────────────────────────────────────────────
 function RubiksCubeInner({ onSolved }: { onSolved: () => void }) {
   const [state, setState] = useState<CubeState>(() => scrambled());
   const [rx, setRx] = useState(-25);
   const [ry, setRy] = useState(-30);
+  const [ccwMode, setCcwMode] = useState(false); // ← inside component
   const draggingRef = useRef<{ x: number; y: number; rx: number; ry: number } | null>(null);
   const solvedFiredRef = useRef(false);
   const moveIndexRef = useRef(0);
-  const moveCountRef = useRef(0);
   const [moveIndex, setMoveIndex] = useState(0);
-  const [hint, setHint] = useState("Step 1: Rotate Right (R)");
+  const [hint, setHint] = useState(SOLUTION_SEQUENCE[0].hint);
 
   const handleTurn = useCallback((face: FaceKey, ccw: boolean) => {
     const current = moveIndexRef.current;
     if (current >= 4) return;
 
     const currentGoal = SOLUTION_SEQUENCE[current];
-
     if (face === currentGoal.face && ccw === currentGoal.ccw) {
       setState((prev) => (ccw ? turnCCW(prev, face) : turnCW(prev, face)));
       moveIndexRef.current = current + 1;
       setMoveIndex(current + 1);
-      setHint(current === 3 ? "SOLVED!" : `Next: ${SOLUTION_SEQUENCE[current + 1].hint}`);
+      setHint(current === 3 ? "🎉 SOLVED!" : SOLUTION_SEQUENCE[current + 1].hint);
     } else {
       setHint(`Try again! ${currentGoal.hint}`);
     }
@@ -385,9 +289,6 @@ function RubiksCubeInner({ onSolved }: { onSolved: () => void }) {
   };
   const onPointerMove = (e: React.PointerEvent) => {
     const d = draggingRef.current;
-    if (draggingRef.current && moveCountRef.current < 2) {
-      setHint("Great! Now click a face to rotate it");
-    }
     if (!d) return;
     setRy(d.ry + (e.clientX - d.x) * 0.5);
     setRx(Math.max(-89, Math.min(89, d.rx - (e.clientY - d.y) * 0.5)));
@@ -398,12 +299,14 @@ function RubiksCubeInner({ onSolved }: { onSolved: () => void }) {
   };
 
   return (
-    <div className="flex flex-col items-center gap-8">
-      <div className="text-center">
-        <p className="text-sm italic text-muted-foreground mt-1">
-          "Try The Sexy Move"
-        </p>
+    <div className="flex flex-col items-center gap-6">
+      <div className="text-center space-y-1">
+        <p className="text-sm italic text-muted-foreground">"Try The Sexy Move"</p>
+        {hint && (
+          <p className="text-sm font-semibold" style={{ color: "oklch(0.82 0.14 80)" }}>{hint}</p>
+        )}
       </div>
+
       <div
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
@@ -412,38 +315,45 @@ function RubiksCubeInner({ onSolved }: { onSolved: () => void }) {
         className="relative cursor-grab touch-none select-none active:cursor-grabbing"
         style={{ width: 360, height: 360, perspective: 1100 }}
       >
-        <div
-          aria-hidden
+        <div aria-hidden
           className="pointer-events-none absolute left-1/2 top-[78%] h-16 w-72 -translate-x-1/2 rounded-[50%]"
+          style={{ background: "radial-gradient(ellipse, oklch(0.82 0.14 80 / 0.35), transparent 70%)", filter: "blur(12px)" }} />
+        <div className="absolute left-1/2 top-1/2"
           style={{
-            background: "radial-gradient(ellipse, oklch(0.82 0.14 80 / 0.35), transparent 70%)",
-            filter: "blur(12px)",
-          }}
-        />
-        <div
-          className="absolute left-1/2 top-1/2"
-          style={{
-            width: 0,
-            height: 0,
-            transformStyle: "preserve-3d",
+            width: 0, height: 0, transformStyle: "preserve-3d",
             transform: `translate(-50%, -50%) rotateX(${rx}deg) rotateY(${ry}deg)`,
             transition: draggingRef.current ? "none" : "transform 0.15s ease-out",
-          }}
-        >
+          }}>
           {(["U", "D", "L", "R", "F", "B"] as FaceKey[]).map((f) => (
-            <Face key={f} face={f} stickers={state[f]} onTurn={handleTurn} />
+            <Face key={f} face={f} stickers={state[f]} onTurn={handleTurn} ccwMode={ccwMode} />
           ))}
         </div>
       </div>
 
-      <div className="flex flex-col items-center gap-2 text-center">
-        <p className="font-display text-xs italic tracking-[0.3em] text-[color:var(--muted-foreground)]">
-          drag to rotate the cube · click a face to turn · shift-click reverses
+      <div className="flex flex-col items-center gap-3 text-center">
+        {/* Direction toggle — for mobile */}
+        <button
+          type="button"
+          onClick={() => setCcwMode((v) => !v)}
+          className="flex items-center gap-2 rounded-full px-5 py-2 text-sm font-semibold transition-all"
+          style={{
+            background: ccwMode ? "oklch(0.82 0.14 80)" : "oklch(0.82 0.14 80 / 0.15)",
+            color: ccwMode ? "#1a1000" : "oklch(0.82 0.14 80)",
+            border: "1px solid oklch(0.82 0.14 80 / 0.4)",
+          }}
+        >
+          {ccwMode ? "↺ Counter-clockwise" : "↻ Clockwise"}
+        </button>
+
+        <p className="font-display text-xs italic tracking-[0.2em] text-[color:var(--muted-foreground)]">
+          drag to orbit · tap face to turn · toggle direction
         </p>
+
         <motion.button
           type="button"
           onClick={() => {
             solvedFiredRef.current = true;
+            moveIndexRef.current = 4;
             setState(clone(SOLVED));
             onSolved();
           }}
@@ -458,189 +368,21 @@ function RubiksCubeInner({ onSolved }: { onSolved: () => void }) {
   );
 }
 
-// function RubiksCubeInnerTutorial({
-//   tutorialStep,
-//   setTutorialStep,
-//   onFinish,
-// }: {
-//   tutorialStep: number;
-//   setTutorialStep: (n: number) => void;
-//   onFinish: () => void;
-// }) {
-//   const [state, setState] = useState<CubeState>(() => scrambled());
-//   const [rx, setRx] = useState(-25);
-//   const [ry, setRy] = useState(-30);
-//   const draggingRef = useRef<any>(null);
-
-//   const handleTurn = useCallback(
-//     (face: FaceKey, ccw: boolean) => {
-//       setState((prev) => (ccw ? turnCCW(prev, face) : turnCW(prev, face)));
-
-//       // Tutorial logic
-//       if (tutorialStep === 1) {
-//         setTutorialStep(2);
-//       } else if (tutorialStep === 2 && ccw) {
-//         setTutorialStep(3);
-//         setTimeout(onFinish, 800);
-//       }
-//     },
-//     [tutorialStep]
-//   );
-
-//   const onPointerDown = (e: React.PointerEvent) => {
-//     (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
-//     draggingRef.current = { x: e.clientX, y: e.clientY, rx, ry };
-//   };
-
-//   const onPointerMove = (e: React.PointerEvent) => {
-//     const d = draggingRef.current;
-//     if (!d) return;
-
-//     setRy(d.ry + (e.clientX - d.x) * 0.5);
-//     setRx(Math.max(-89, Math.min(89, d.rx - (e.clientY - d.y) * 0.5)));
-
-//     // Tutorial step 1 complete (drag)
-//     if (tutorialStep === 0) {
-//       setTutorialStep(1);
-//     }
-//   };
-
-//   const onPointerUp = (e: React.PointerEvent) => {
-//     draggingRef.current = null;
-//     try {
-//       (e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId);
-//     } catch { }
-//   };
-
-//   return (
-//     <div className="flex flex-col items-center gap-8">
-//       <div
-//         onPointerDown={onPointerDown}
-//         onPointerMove={onPointerMove}
-//         onPointerUp={onPointerUp}
-//         onPointerCancel={onPointerUp}
-//         className="relative cursor-grab touch-none select-none active:cursor-grabbing"
-//         style={{ width: 360, height: 360, perspective: 1100 }}
-//       >
-//         <div
-//           className="absolute left-1/2 top-1/2"
-//           style={{
-//             transformStyle: "preserve-3d",
-//             transform: `translate(-50%, -50%) rotateX(${rx}deg) rotateY(${ry}deg)`,
-//           }}
-//         >
-//           {(["U", "D", "L", "R", "F", "B"] as FaceKey[]).map((f) => (
-//             <Face
-//               key={f}
-//               face={f}
-//               stickers={state[f]}
-//               onTurn={handleTurn}
-//             />
-//           ))}
-//         </div>
-//       </div>
-//     </div>
-//   );
-// }
-
+// ── Root export ────────────────────────────────────────────────────────────────
 export function RubiksCube({ onSolved }: { onSolved: () => void }) {
-  const [phase, setPhase] = useState<"guide" | "tutorial" | "play">("guide");
-  const [tutorialStep, setTutorialStep] = useState(0);
-
-  const TUTORIAL_TEXT = [
-    "Drag the cube to rotate it",
-    "Click any face to rotate",
-    "Hold Shift + click to reverse",
-  ];
+  const [phase, setPhase] = useState<"guide" | "play">("guide");
 
   return (
     <AnimatePresence mode="wait">
       {phase === "guide" ? (
-        <motion.div
-          key="guide"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-        >
+        <motion.div key="guide" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
           <Guide onDone={() => setPhase("play")} />
         </motion.div>
-      ) : phase === "tutorial" ? (
-        <motion.div
-          key="tutorial"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          className="relative"
-        >
-          <RubiksCubeInner onSolved={onSolved} />
-          {/* <RubiksCubeInnerTutorial
-            tutorialStep={tutorialStep}
-            setTutorialStep={setTutorialStep}
-            onFinish={() => setPhase("play")}
-          /> */}
-
-          {/* Floating instruction */}
-          {tutorialStep < TUTORIAL_TEXT.length && (
-            <motion.div
-              key={tutorialStep}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0 }}
-              className="absolute top-4 left-1/2 -translate-x-1/2 
-                         bg-black/70 text-white px-4 py-2 rounded-lg text-sm"
-            >
-              {TUTORIAL_TEXT[tutorialStep]}
-            </motion.div>
-          )}
-
-          {/* Skip */}
-          <button
-            onClick={() => setPhase("play")}
-            className="absolute bottom-4 left-1/2 -translate-x-1/2 
-                       text-xs underline text-[color:var(--muted-foreground)]"
-          >
-            Skip tutorial
-          </button>
-        </motion.div>
       ) : (
-        <motion.div
-          key="play"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-        >
+        <motion.div key="play" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
           <RubiksCubeInner onSolved={onSolved} />
         </motion.div>
       )}
     </AnimatePresence>
   );
 }
-// // ── Root export ────────────────────────────────────────────────────────────────
-// export function RubiksCube({ onSolved }: { onSolved: () => void }) {
-//   const [phase, setPhase] = useState<"guide" | "play">("guide");
-
-//   return (
-//     <AnimatePresence mode="wait">
-//       {phase === "guide" ? (
-//         <motion.div
-//           key="guide"
-//           initial={{ opacity: 0 }}
-//           animate={{ opacity: 1 }}
-//           exit={{ opacity: 0, scale: 0.97 }}
-//           transition={{ duration: 0.25 }}
-//         >
-//           <Guide onDone={() => setPhase("play")} />
-//         </motion.div>
-//       ) : (
-//         <motion.div
-//           key="play"
-//           initial={{ opacity: 0, scale: 0.97 }}
-//           animate={{ opacity: 1, scale: 1 }}
-//           exit={{ opacity: 0 }}
-//           transition={{ duration: 0.3 }}
-//         >
-//           <RubiksCubeInner onSolved={onSolved} />
-//         </motion.div>
-//       )}
-//     </AnimatePresence>
-//   );
-// }
