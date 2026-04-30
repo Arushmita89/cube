@@ -41,6 +41,7 @@ const SOLVED: CubeState = {
   B: Array(9).fill("B") as Sticker[],
 };
 
+// Move this OUTSIDE RubiksCubeInner, at module level
 // ── Cube logic (unchanged) ─────────────────────────────────────────────────────
 function clone(s: CubeState): CubeState {
   return { U: [...s.U], D: [...s.D], L: [...s.L], R: [...s.R], F: [...s.F], B: [...s.B] };
@@ -336,45 +337,47 @@ function Face({
   );
 }
 
+const SOLUTION_SEQUENCE = [
+  { face: "R" as FaceKey, ccw: false, hint: "Step 1: Rotate Right Up (R)" },
+  { face: "U" as FaceKey, ccw: false, hint: "Step 2: Rotate Top Left (U)" },
+  { face: "R" as FaceKey, ccw: true, hint: "Step 3: Rotate Right Down (R')" },
+  { face: "U" as FaceKey, ccw: true, hint: "Step 4: Rotate Top Right (U')" },
+];
+
 // ── Cube component ─────────────────────────────────────────────────────────────
 function RubiksCubeInner({ onSolved }: { onSolved: () => void }) {
   const [state, setState] = useState<CubeState>(() => scrambled());
   const [rx, setRx] = useState(-25);
   const [ry, setRy] = useState(-30);
   const draggingRef = useRef<{ x: number; y: number; rx: number; ry: number } | null>(null);
-  const firedRef = useRef(false);
-
-  const [hint, setHint] = useState("");
+  const solvedFiredRef = useRef(false);
+  const moveIndexRef = useRef(0);
   const moveCountRef = useRef(0);
   const [moveIndex, setMoveIndex] = useState(0);
-  const solutionSequence = [
-    { face: "R", ccw: false, hint: "Step 1: Rotate Right Up (R)" },
-    { face: "U", ccw: false, hint: "Step 2: Rotate Top Left (U)" },
-    { face: "R", ccw: true, hint: "Step 3: Rotate Right Down (R')" },
-    { face: "U", ccw: true, hint: "Step 4: Rotate Top Right (U')" },
-  ];
+  const [hint, setHint] = useState("Step 1: Rotate Right (R)");
+
   const handleTurn = useCallback((face: FaceKey, ccw: boolean) => {
-    const currentGoal = solutionSequence[moveIndex];
+    const current = moveIndexRef.current;
+    if (current >= 4) return;
+
+    const currentGoal = SOLUTION_SEQUENCE[current];
 
     if (face === currentGoal.face && ccw === currentGoal.ccw) {
-      // CORRECT MOVE
       setState((prev) => (ccw ? turnCCW(prev, face) : turnCW(prev, face)));
-      setMoveIndex((prev) => prev + 1);
-      setHint(moveIndex === 3 ? "SOLVED!" : solutionSequence[moveIndex + 1].hint);
+      moveIndexRef.current = current + 1;
+      setMoveIndex(current + 1);
+      setHint(current === 3 ? "SOLVED!" : `Next: ${SOLUTION_SEQUENCE[current + 1].hint}`);
     } else {
-      // WRONG MOVE
       setHint(`Try again! ${currentGoal.hint}`);
-      // Optional: Add a "shake" effect to the cube here
     }
-  }, [moveIndex]);
+  }, []);
 
   useEffect(() => {
-    if (!firedRef.current && isSolved(state)) {
-      firedRef.current = true;
-      const t = setTimeout(() => onSolved(), 700);
-      return () => clearTimeout(t);
+    if (moveIndex >= 4 && !solvedFiredRef.current) {
+      solvedFiredRef.current = true;
+      setTimeout(() => onSolved(), 800);
     }
-  }, [state, onSolved]);
+  }, [moveIndex]);
 
   const onPointerDown = (e: React.PointerEvent) => {
     (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
@@ -439,7 +442,11 @@ function RubiksCubeInner({ onSolved }: { onSolved: () => void }) {
         </p>
         <motion.button
           type="button"
-          onClick={() => setState(clone(SOLVED))}
+          onClick={() => {
+            solvedFiredRef.current = true;
+            setState(clone(SOLVED));
+            onSolved();
+          }}
           whileHover={{ scale: 1.04 }}
           whileTap={{ scale: 0.97 }}
           className="font-display text-[11px] italic tracking-[0.4em] text-[color:var(--muted-foreground)] underline decoration-[var(--gold)]/40 underline-offset-[6px] hover:text-[color:var(--gold)]"

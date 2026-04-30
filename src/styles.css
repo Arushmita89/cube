@@ -1,7 +1,7 @@
-@import "tailwindcss" source(none);
-@source "../src";
 @import "tw-animate-css";
-
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 @custom-variant dark (&:is(.dark *));
 
 /*
@@ -181,4 +181,9 @@
 @keyframes float-slow {
   0%, 100% { transform: translateY(0px); }
   50% { transform: translateY(-12px); }
+}
+html, body, #root {
+  height: 100%;
+  width: 100%;
+  margin: 0;
 }
