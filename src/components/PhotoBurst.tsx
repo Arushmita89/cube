@@ -40,24 +40,30 @@ const PHOTO_CONFIGS: PhotoConfig[] = [
 ];
 
 // vw-based photo size so nothing clips
-const PHOTO_SIZE_VW = 29; // 3 across = 87vw + gaps; 2 sides = ~58vw leaving center clear
+const PHOTO_SIZE_VW = 29;
 
-// Convert slot + row to absolute position
+function getPhotoWidth(cfg: PhotoConfig): string {
+  return cfg.row === 2 || cfg.row === 3 ? "26vw" : `${PHOTO_SIZE_VW}vw`;
+}
+
 function getPosition(cfg: PhotoConfig): { top: string; left: string } {
   const topMap: Record<number, string> = {
     1: "1%",
-    2: "28%",
-    3: "55%",
-    4: "78%",
+    2: "22%",
+    3: "62%",
+    4: "82%",
   };
   const leftMap: Record<string, string> = {
-    left: "1%",
+    left:   "1%",
     center: "36%",
-    right: "69%",
+    right:  "69%",
   };
-  // For side-only rows (2 & 3), left/right hug the edges
-  if ((cfg.row === 2 || cfg.row === 3) && cfg.slot === "left") return { top: topMap[cfg.row], left: "1%" };
-  if ((cfg.row === 2 || cfg.row === 3) && cfg.slot === "right") return { top: topMap[cfg.row], left: "69%" };
+
+  if ((cfg.row === 2 || cfg.row === 3) && cfg.slot === "left")
+    return { top: topMap[cfg.row], left: "0%" };
+  if ((cfg.row === 2 || cfg.row === 3) && cfg.slot === "right")
+    return { top: topMap[cfg.row], left: "74%" };
+
   return { top: topMap[cfg.row], left: leftMap[cfg.slot] };
 }
 
@@ -152,7 +158,7 @@ export function PhotoBurst({ message }: { name: string; message: string }) {
             }}
             style={{
               position: "absolute",
-              width: `${PHOTO_SIZE_VW}vw`,
+              width: getPhotoWidth(cfg),
               transformOrigin: "center",
               zIndex: 2,
             }}
