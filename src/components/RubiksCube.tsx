@@ -363,10 +363,12 @@ function RubiksCubeInner({ onSolved }: { onSolved: () => void }) {
         <motion.button
           type="button"
           onClick={() => {
-            solvedFiredRef.current = true;
-            moveIndexRef.current = 4;
+            // solvedFiredRef.current = true;
+            // moveIndexRef.current = 4;
+            // setState(clone(SOLVED));
+            // onSolved();
             setState(clone(SOLVED));
-            onSolved();
+            setTimeout(() => onSolved(), 800);
           }}
           whileHover={{ scale: 1.04 }}
           whileTap={{ scale: 0.97 }}
