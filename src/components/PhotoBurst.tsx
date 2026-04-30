@@ -27,16 +27,16 @@ type PhotoConfig = {
 };
 
 const PHOTO_CONFIGS: PhotoConfig[] = [
-  { row: 1, slot: "left",   rotate: -6 },
-  { row: 1, slot: "center", rotate:  3 },
-  { row: 1, slot: "right",  rotate: -4 },
-  { row: 2, slot: "left",   rotate:  5 },
-  { row: 2, slot: "right",  rotate: -7 },
-  { row: 3, slot: "left",   rotate: -5 },
-  { row: 3, slot: "right",  rotate:  6 },
-  { row: 4, slot: "left",   rotate:  4 },
+  { row: 1, slot: "left", rotate: -6 },
+  { row: 1, slot: "center", rotate: 3 },
+  { row: 1, slot: "right", rotate: -4 },
+  { row: 2, slot: "left", rotate: 5 },
+  { row: 2, slot: "right", rotate: -7 },
+  { row: 3, slot: "left", rotate: -5 },
+  { row: 3, slot: "right", rotate: 6 },
+  { row: 4, slot: "left", rotate: 4 },
   { row: 4, slot: "center", rotate: -3 },
-  { row: 4, slot: "right",  rotate:  5 },
+  { row: 4, slot: "right", rotate: 5 },
 ];
 
 // vw-based photo size so nothing clips
@@ -51,12 +51,12 @@ function getPosition(cfg: PhotoConfig): { top: string; left: string } {
     4: "78%",
   };
   const leftMap: Record<string, string> = {
-    left:   "1%",
+    left: "1%",
     center: "36%",
-    right:  "69%",
+    right: "69%",
   };
   // For side-only rows (2 & 3), left/right hug the edges
-  if ((cfg.row === 2 || cfg.row === 3) && cfg.slot === "left")  return { top: topMap[cfg.row], left: "1%" };
+  if ((cfg.row === 2 || cfg.row === 3) && cfg.slot === "left") return { top: topMap[cfg.row], left: "1%" };
   if ((cfg.row === 2 || cfg.row === 3) && cfg.slot === "right") return { top: topMap[cfg.row], left: "69%" };
   return { top: topMap[cfg.row], left: leftMap[cfg.slot] };
 }
@@ -66,8 +66,8 @@ const SPARKS = Array.from({ length: 36 }, (_, i) => ({
   dist: 100 + Math.random() * 150,
   color:
     i % 3 === 0 ? "oklch(0.82 0.14 80)"
-    : i % 3 === 1 ? "oklch(0.95 0.01 90)"
-    : "oklch(0.74 0.18 55)",
+      : i % 3 === 1 ? "oklch(0.95 0.01 90)"
+        : "oklch(0.74 0.18 55)",
 }));
 
 export function PhotoBurst({ message }: { name: string; message: string }) {
@@ -181,7 +181,74 @@ export function PhotoBurst({ message }: { name: string; message: string }) {
       })}
 
       {/* ── Wish card — true center using CSS transform, NOT Framer x/y ── */}
-      <motion.div
+      {/* Outer div handles centering — never animated */}
+      <div
+        style={{
+          position: "absolute",
+          top: "50%",
+          left: "50%",
+          transform: "translate(-50%, -50%)",
+          zIndex: 20,
+          pointerEvents: "none",
+          width: "calc(100vw - 56px)",
+          maxWidth: 420,
+          boxSizing: "border-box",
+        }}
+      >
+        {/* Inner div handles only opacity + scale — no position values */}
+        <motion.div
+          initial={{ opacity: 0, scale: 0.85 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ delay: 1.6, duration: 1.1, ease: [0.22, 1, 0.36, 1] }}
+        >
+          <div style={{
+            borderRadius: 10,
+            backdropFilter: "blur(16px)",
+            WebkitBackdropFilter: "blur(16px)",
+            background: "oklch(0.08 0.02 250 / 0.88)",
+            boxShadow: "0 24px 80px oklch(0 0 0 / 0.95), 0 0 0 1px oklch(0.82 0.14 80 / 0.3)",
+            padding: "clamp(14px, 5vw, 28px) clamp(16px, 5vw, 32px) clamp(18px, 5vw, 28px)",
+            textAlign: "center",
+          }}>
+            <h1
+              className="font-display italic leading-tight text-gradient-gold"
+              style={{ margin: 0, fontSize: "clamp(1.6rem, 9vw, 3.5rem)" }}
+            >
+              Happy Birthday
+            </h1>
+            <div
+              className="font-display italic"
+              style={{ marginTop: 6, color: "white", fontSize: "clamp(0.95rem, 5vw, 1.75rem)" }}
+            >
+              Baaaabbbiiiiiiiiiiii
+            </div>
+            <p
+              className="font-display italic leading-relaxed"
+              style={{
+                margin: "10px auto 0",
+                color: "oklch(0.72 0.05 250)",
+                whiteSpace: "pre-line",
+                fontSize: "clamp(0.72rem, 3vw, 0.92rem)",
+              }}
+            >
+              {message}
+            </p>
+            <div style={{
+              marginTop: 14,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: 10,
+              color: "oklch(0.82 0.14 80)",
+            }}>
+              <span style={{ height: 1, width: 28, background: "oklch(0.82 0.14 80 / 0.4)" }} />
+              <span className="font-display" style={{ fontSize: 11, letterSpacing: "0.4em" }}>✦</span>
+              <span style={{ height: 1, width: 28, background: "oklch(0.82 0.14 80 / 0.4)" }} />
+            </div>
+          </div>
+        </motion.div>
+      </div>
+      {/* <motion.div
         initial={{ opacity: 0, scale: 0.85 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ delay: 1.6, duration: 1.1, ease: [0.22, 1, 0.36, 1] }}
@@ -246,7 +313,7 @@ export function PhotoBurst({ message }: { name: string; message: string }) {
             <span style={{ height: 1, width: 28, background: "oklch(0.82 0.14 80 / 0.4)" }} />
           </div>
         </div>
-      </motion.div>
+      </motion.div> */}
 
     </div>
   );
