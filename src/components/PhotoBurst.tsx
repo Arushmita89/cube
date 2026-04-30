@@ -38,8 +38,9 @@ const SPARKS = Array.from({ length: 40 }, (_, i) => ({
     ? "oklch(0.95 0.01 90)"
     : "oklch(0.74 0.18 55)",
 }));
-console.log("PhotoBurst MOUNTED");
+
 export function PhotoBurst({ message }: { name: string; message: string }) {
+  console.log("PhotoBurst MOUNTED");
   const order = useMemo(() => PHOTOS.map((_, i) => i), []);
 
   const content = (
@@ -49,6 +50,7 @@ export function PhotoBurst({ message }: { name: string; message: string }) {
       zIndex: 99999,
       overflow: "hidden",
       background: "oklch(0.08 0.02 250)",
+      touchAction: "none",
     }}>
       {/* Ambient bokeh */}
       <div style={{
@@ -137,7 +139,7 @@ export function PhotoBurst({ message }: { name: string; message: string }) {
           padding: "0 24px", textAlign: "center",
         }}
       >
-        <div style={{
+        {/* <div style={{
           position: "relative", margin: "0 auto", maxWidth: 768,
           borderRadius: 4, backdropFilter: "blur(8px)",
           background: "oklch(0.1 0.02 250 / 0.75)",
@@ -158,6 +160,35 @@ export function PhotoBurst({ message }: { name: string; message: string }) {
             {message}
           </p>
           <div style={{ marginTop: 24, display: "flex", alignItems: "center", justifyContent: "center", gap: 12, color: "oklch(0.82 0.14 80)" }}>
+            <span style={{ height: 1, width: 40, background: "oklch(0.82 0.14 80 / 0.4)" }} />
+            <span className="font-display" style={{ fontSize: 12, letterSpacing: "0.4em" }}>✦</span>
+            <span style={{ height: 1, width: 40, background: "oklch(0.82 0.14 80 / 0.4)" }} />
+          </div>
+        </div> */}
+
+        <div style={{
+          position: "relative", margin: "0 auto", maxWidth: 768,
+          borderRadius: 4, backdropFilter: "blur(8px)",
+          background: "oklch(0.1 0.02 250 / 0.75)",
+          boxShadow: "0 40px 120px oklch(0 0 0 / 0.8)",
+          border: "1px solid oklch(0.82 0.14 80 / 0.3)",
+          padding: "12px 16px 20px",  // ← smaller padding on all screens
+          width: "calc(100vw - 48px)", // ← respects phone edges
+          boxSizing: "border-box",
+        }}>
+          <h1 className="font-display italic leading-tight text-gradient-gold"
+            style={{ marginTop: 8, fontSize: "clamp(1.8rem, 6vw, 4rem)" }}> {/* ← fluid font size */}
+            Happy Birthday
+          </h1>
+          <div className="font-display italic"
+            style={{ marginTop: 8, color: "white", fontSize: "clamp(1.2rem, 4vw, 2rem)" }}> {/* ← fluid */}
+            Baaaabbbiiiiiiiiiiii
+          </div>
+          <p className="font-display italic leading-relaxed"
+            style={{ margin: "12px auto 0", maxWidth: 512, color: "oklch(0.7 0.05 250)", whiteSpace: "pre-line", fontSize: "clamp(0.8rem, 2.5vw, 1rem)" }}>
+            {message}
+          </p>
+          <div style={{ marginTop: 16, display: "flex", alignItems: "center", justifyContent: "center", gap: 12, color: "oklch(0.82 0.14 80)" }}>
             <span style={{ height: 1, width: 40, background: "oklch(0.82 0.14 80 / 0.4)" }} />
             <span className="font-display" style={{ fontSize: 12, letterSpacing: "0.4em" }}>✦</span>
             <span style={{ height: 1, width: 40, background: "oklch(0.82 0.14 80 / 0.4)" }} />
