@@ -12,58 +12,85 @@ import photo8 from "../assets/photo-8.jpg";
 import photo9 from "../assets/photo-9.jpg";
 import photo10 from "../assets/photo-10.jpg";
 
-const PHOTOS = [photo1, photo2, photo3, photo4, photo5, photo6, photo7, photo8, photo9, photo10];
-
-// ── Size is now in vw units so photos scale with the screen ──
-type Anchor = { top: string; left: string; rotate: number; sizeVw: number };
-const ANCHORS: Anchor[] = [
-  { top: "2%",  left: "2%",  rotate: -8, sizeVw: 36 },
-  { top: "3%",  left: "34%", rotate:  5, sizeVw: 32 },
-  { top: "2%",  left: "64%", rotate: -3, sizeVw: 34 },
-  { top: "6%",  left: "82%", rotate:  9, sizeVw: 30 },
-  { top: "38%", left: "1%",  rotate:  6, sizeVw: 38 },
-  { top: "40%", left: "82%", rotate: -7, sizeVw: 36 },
-  { top: "72%", left: "3%",  rotate: -4, sizeVw: 34 },
-  { top: "74%", left: "32%", rotate:  7, sizeVw: 32 },
-  { top: "72%", left: "62%", rotate: -6, sizeVw: 36 },
-  { top: "75%", left: "81%", rotate:  4, sizeVw: 32 },
+const PHOTOS = [
+  photo1, photo2, photo3,  // row 1 — 3 across top
+  photo4, photo5,          // row 2 — left + right sides
+  photo6, photo7,          // row 3 — left + right sides
+  photo8, photo9, photo10, // row 4 — 3 across bottom
 ];
 
-const SPARKS = Array.from({ length: 40 }, (_, i) => ({
-  angle: (i / 40) * Math.PI * 2,
-  dist: 120 + Math.random() * 180, // reduced — px sparks travel less on mobile
+// Each photo knows its row, column slot, and tilt
+type PhotoConfig = {
+  row: 1 | 2 | 3 | 4;
+  slot: "left" | "center" | "right";
+  rotate: number;
+};
+
+const PHOTO_CONFIGS: PhotoConfig[] = [
+  { row: 1, slot: "left",   rotate: -6 },
+  { row: 1, slot: "center", rotate:  3 },
+  { row: 1, slot: "right",  rotate: -4 },
+  { row: 2, slot: "left",   rotate:  5 },
+  { row: 2, slot: "right",  rotate: -7 },
+  { row: 3, slot: "left",   rotate: -5 },
+  { row: 3, slot: "right",  rotate:  6 },
+  { row: 4, slot: "left",   rotate:  4 },
+  { row: 4, slot: "center", rotate: -3 },
+  { row: 4, slot: "right",  rotate:  5 },
+];
+
+// vw-based photo size so nothing clips
+const PHOTO_SIZE_VW = 29; // 3 across = 87vw + gaps; 2 sides = ~58vw leaving center clear
+
+// Convert slot + row to absolute position
+function getPosition(cfg: PhotoConfig): { top: string; left: string } {
+  const topMap: Record<number, string> = {
+    1: "1%",
+    2: "28%",
+    3: "55%",
+    4: "78%",
+  };
+  const leftMap: Record<string, string> = {
+    left:   "1%",
+    center: "36%",
+    right:  "69%",
+  };
+  // For side-only rows (2 & 3), left/right hug the edges
+  if ((cfg.row === 2 || cfg.row === 3) && cfg.slot === "left")  return { top: topMap[cfg.row], left: "1%" };
+  if ((cfg.row === 2 || cfg.row === 3) && cfg.slot === "right") return { top: topMap[cfg.row], left: "69%" };
+  return { top: topMap[cfg.row], left: leftMap[cfg.slot] };
+}
+
+const SPARKS = Array.from({ length: 36 }, (_, i) => ({
+  angle: (i / 36) * Math.PI * 2,
+  dist: 100 + Math.random() * 150,
   color:
-    i % 3 === 0
-      ? "oklch(0.82 0.14 80)"
-      : i % 3 === 1
-      ? "oklch(0.95 0.01 90)"
-      : "oklch(0.74 0.18 55)",
+    i % 3 === 0 ? "oklch(0.82 0.14 80)"
+    : i % 3 === 1 ? "oklch(0.95 0.01 90)"
+    : "oklch(0.74 0.18 55)",
 }));
 
 export function PhotoBurst({ message }: { name: string; message: string }) {
   const order = useMemo(() => PHOTOS.map((_, i) => i), []);
 
   const content = (
-    <div
-      style={{
-        position: "fixed",
-        inset: 0,
-        zIndex: 99999,
-        overflow: "hidden",
-        background: "oklch(0.08 0.02 250)",
-      }}
-    >
+    <div style={{
+      position: "fixed",
+      inset: 0,
+      zIndex: 99999,
+      overflow: "hidden",
+      background: "oklch(0.08 0.02 250)",
+    }}>
+
       {/* Ambient bokeh */}
-      <div
-        style={{
-          pointerEvents: "none",
-          position: "absolute",
-          inset: 0,
-          opacity: 0.6,
-          background:
-            "radial-gradient(circle at 20% 30%, oklch(0.82 0.14 80 / 0.15), transparent 40%), radial-gradient(circle at 80% 70%, oklch(0.55 0.18 250 / 0.15), transparent 40%)",
-        }}
-      />
+      <div style={{
+        pointerEvents: "none",
+        position: "absolute",
+        inset: 0,
+        opacity: 0.6,
+        background:
+          "radial-gradient(circle at 20% 30%, oklch(0.82 0.14 80 / 0.15), transparent 40%), radial-gradient(circle at 80% 70%, oklch(0.55 0.18 250 / 0.15), transparent 40%)",
+      }} />
 
       {/* Box burst */}
       <motion.div
@@ -72,15 +99,11 @@ export function PhotoBurst({ message }: { name: string; message: string }) {
         transition={{ duration: 0.9, times: [0, 0.4, 1], ease: "easeOut" }}
         style={{ position: "absolute", left: "50%", top: "50%", x: "-50%", y: "-50%" }}
       >
-        <div
-          style={{
-            height: 96,
-            width: 96,
-            borderRadius: 8,
-            background: "linear-gradient(135deg, oklch(0.82 0.14 80), oklch(0.74 0.18 55))",
-            boxShadow: "0 0 60px oklch(0.82 0.14 80 / 0.6)",
-          }}
-        />
+        <div style={{
+          height: 80, width: 80, borderRadius: 8,
+          background: "linear-gradient(135deg, oklch(0.82 0.14 80), oklch(0.74 0.18 55))",
+          boxShadow: "0 0 60px oklch(0.82 0.14 80 / 0.6)",
+        }} />
       </motion.div>
 
       {/* Sparks */}
@@ -96,41 +119,29 @@ export function PhotoBurst({ message }: { name: string; message: string }) {
           }}
           transition={{ duration: 1.2, delay: 0.2, ease: "easeOut" }}
           style={{
-            position: "absolute",
-            left: "50%",
-            top: "50%",
-            display: "block",
-            height: 5,
-            width: 5,
-            borderRadius: "50%",
+            position: "absolute", left: "50%", top: "50%",
+            display: "block", height: 5, width: 5, borderRadius: "50%",
             background: spark.color,
           }}
         />
       ))}
 
-      {/* Photos — vw-based sizing */}
+      {/* Photos — grid-positioned absolutely */}
       {order.map((i) => {
-        const a = ANCHORS[i];
+        const cfg = PHOTO_CONFIGS[i];
+        const pos = getPosition(cfg);
         return (
           <motion.div
             key={i}
             initial={{
-              top: "50%",
-              left: "50%",
-              x: "-50%",
-              y: "-50%",
-              rotate: 0,
-              scale: 0.2,
-              opacity: 0,
+              top: "50%", left: "50%",
+              x: "-50%", y: "-50%",
+              rotate: 0, scale: 0.15, opacity: 0,
             }}
             animate={{
-              top: a.top,
-              left: a.left,
-              x: 0,
-              y: 0,
-              rotate: a.rotate,
-              scale: 1,
-              opacity: 1,
+              top: pos.top, left: pos.left,
+              x: 0, y: 0,
+              rotate: cfg.rotate, scale: 1, opacity: 1,
             }}
             transition={{
               delay: 0.5 + i * 0.07,
@@ -141,18 +152,17 @@ export function PhotoBurst({ message }: { name: string; message: string }) {
             }}
             style={{
               position: "absolute",
-              width: `${a.sizeVw}vw`,
+              width: `${PHOTO_SIZE_VW}vw`,
               transformOrigin: "center",
+              zIndex: 2,
             }}
           >
-            <div
-              style={{
-                borderRadius: 4,
-                background: "white",
-                padding: "5px 5px 20px 5px",
-                boxShadow: "0 12px 40px oklch(0 0 0 / 0.5)",
-              }}
-            >
+            <div style={{
+              borderRadius: 3,
+              background: "white",
+              padding: "4px 4px 16px 4px",
+              boxShadow: "0 8px 30px oklch(0 0 0 / 0.55)",
+            }}>
               <img
                 src={PHOTOS[i]}
                 alt=""
@@ -170,41 +180,35 @@ export function PhotoBurst({ message }: { name: string; message: string }) {
         );
       })}
 
-      {/* Birthday message — sits above everything */}
+      {/* ── Wish card — true center using CSS transform, NOT Framer x/y ── */}
       <motion.div
-        initial={{ opacity: 0, scale: 0.85, y: 20 }}
-        animate={{ opacity: 1, scale: 1, y: 0 }}
+        initial={{ opacity: 0, scale: 0.85 }}
+        animate={{ opacity: 1, scale: 1 }}
         transition={{ delay: 1.6, duration: 1.1, ease: [0.22, 1, 0.36, 1] }}
         style={{
-          pointerEvents: "none",
           position: "absolute",
-          left: "50%",
           top: "50%",
-          zIndex: 10,
-          x: "-50%",
-          y: "-50%",
-          width: "calc(100vw - 48px)",
+          left: "50%",
+          transform: "translate(-50%, -50%)",  // ← true CSS centering, not Framer
+          zIndex: 20,
+          pointerEvents: "none",
+          width: "calc(100vw - 56px)",
+          maxWidth: 420,
           boxSizing: "border-box",
-          textAlign: "center",
         }}
       >
-        <div
-          style={{
-            position: "relative",
-            margin: "0 auto",
-            maxWidth: 480,
-            borderRadius: 8,
-            backdropFilter: "blur(12px)",
-            WebkitBackdropFilter: "blur(12px)", // Safari
-            background: "oklch(0.08 0.02 250 / 0.85)", // slightly more opaque for readability over photos
-            boxShadow: "0 24px 80px oklch(0 0 0 / 0.9)",
-            border: "1px solid oklch(0.82 0.14 80 / 0.35)",
-            padding: "clamp(12px, 4vw, 28px) clamp(14px, 5vw, 32px) clamp(16px, 4vw, 28px)",
-          }}
-        >
+        <div style={{
+          borderRadius: 10,
+          backdropFilter: "blur(16px)",
+          WebkitBackdropFilter: "blur(16px)",
+          background: "oklch(0.08 0.02 250 / 0.88)",
+          boxShadow: "0 24px 80px oklch(0 0 0 / 0.95), 0 0 0 1px oklch(0.82 0.14 80 / 0.3)",
+          padding: "clamp(14px, 5vw, 28px) clamp(16px, 5vw, 32px) clamp(18px, 5vw, 28px)",
+          textAlign: "center",
+        }}>
           <h1
             className="font-display italic leading-tight text-gradient-gold"
-            style={{ marginTop: 0, fontSize: "clamp(1.6rem, 8vw, 3.5rem)" }}
+            style={{ margin: 0, fontSize: "clamp(1.6rem, 9vw, 3.5rem)" }}
           >
             Happy Birthday
           </h1>
@@ -213,7 +217,7 @@ export function PhotoBurst({ message }: { name: string; message: string }) {
             style={{
               marginTop: 6,
               color: "white",
-              fontSize: "clamp(1rem, 5vw, 1.75rem)",
+              fontSize: "clamp(0.95rem, 5vw, 1.75rem)",
             }}
           >
             Baaaabbbiiiiiiiiiiii
@@ -222,47 +226,28 @@ export function PhotoBurst({ message }: { name: string; message: string }) {
             className="font-display italic leading-relaxed"
             style={{
               margin: "10px auto 0",
-              maxWidth: 420,
               color: "oklch(0.72 0.05 250)",
               whiteSpace: "pre-line",
-              fontSize: "clamp(0.75rem, 3vw, 0.95rem)",
+              fontSize: "clamp(0.72rem, 3vw, 0.92rem)",
             }}
           >
             {message}
           </p>
-          <div
-            style={{
-              marginTop: 14,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: 12,
-              color: "oklch(0.82 0.14 80)",
-            }}
-          >
-            <span
-              style={{
-                height: 1,
-                width: 32,
-                background: "oklch(0.82 0.14 80 / 0.4)",
-              }}
-            />
-            <span
-              className="font-display"
-              style={{ fontSize: 11, letterSpacing: "0.4em" }}
-            >
-              ✦
-            </span>
-            <span
-              style={{
-                height: 1,
-                width: 32,
-                background: "oklch(0.82 0.14 80 / 0.4)",
-              }}
-            />
+          <div style={{
+            marginTop: 14,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: 10,
+            color: "oklch(0.82 0.14 80)",
+          }}>
+            <span style={{ height: 1, width: 28, background: "oklch(0.82 0.14 80 / 0.4)" }} />
+            <span className="font-display" style={{ fontSize: 11, letterSpacing: "0.4em" }}>✦</span>
+            <span style={{ height: 1, width: 28, background: "oklch(0.82 0.14 80 / 0.4)" }} />
           </div>
         </div>
       </motion.div>
+
     </div>
   );
 
