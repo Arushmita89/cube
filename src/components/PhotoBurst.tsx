@@ -50,7 +50,7 @@ export function PhotoBurst({ message }: { name: string; message: string }) {
       zIndex: 99999,
       overflow: "hidden",
       background: "oklch(0.08 0.02 250)",
-      touchAction: "none",
+      //touchAction: "none",
     }}>
       {/* Ambient bokeh */}
       <div style={{
