@@ -315,6 +315,9 @@ function RubiksCubeInner({ onSolved }: { onSolved: () => void }) {
       <p className="text-sm font-semibold" style={{ color: "oklch(0.82 0.14 80)" }}>
         Step {moveIndex} / 4
       </p>
+      <p className="sm:text-lg font-semibold italic" style={{ color: "oklch(0.82 0.14 80)" }}>
+        Try the Sexy move
+      </p>
       <div
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
@@ -367,9 +370,9 @@ function RubiksCubeInner({ onSolved }: { onSolved: () => void }) {
           }}
           whileHover={{ scale: 1.04 }}
           whileTap={{ scale: 0.97 }}
-          className="font-display text-[11px] italic tracking-[0.4em] text-[color:var(--muted-foreground)] underline decoration-[var(--gold)]/40 underline-offset-[6px] hover:text-[color:var(--gold)]"
+          className="font-display text-[11px] italic tracking-[0.4em] text-[color:black] underline decoration-[var(--gold)]/40 underline-offset-[6px] hover:text-[color:var(--gold)]"
         >
-          give up — solve for me
+          solve for me
         </motion.button>
       </div>
     </div>
