@@ -42,21 +42,16 @@ const PHOTO_CONFIGS: PhotoConfig[] = [
 // vw-based photo size so nothing clips
 const PHOTO_SIZE_VW = 29;
 
-// function getPhotoWidth(cfg: PhotoConfig): string {
-//   return cfg.row === 2 || cfg.row === 3 ? "26vw" : `${PHOTO_SIZE_VW}vw`;
-// }
-
 function getPhotoWidth(cfg: PhotoConfig): string {
-  if (cfg.row === 2 || cfg.row === 3) return "min(26vw, 22vh)";
-  return "min(29vw, 20vh)"; // on laptop vh wins, keeps photos small enough to fit
+  return cfg.row === 2 || cfg.row === 3 ? "26vw" : `${PHOTO_SIZE_VW}vw`;
 }
 
 function getPosition(cfg: PhotoConfig): { top: string; left: string } {
   const topMap: Record<number, string> = {
-    1: "2vh",
-    2: "22vh",
-    3: "62vh",
-    4: "82vh",
+    1: "1%",
+    2: "22%",
+    3: "62%",
+    4: "82%",
   };
   const leftMap: Record<string, string> = {
     left:   "1%",
@@ -71,27 +66,6 @@ function getPosition(cfg: PhotoConfig): { top: string; left: string } {
 
   return { top: topMap[cfg.row], left: leftMap[cfg.slot] };
 }
-
-// function getPosition(cfg: PhotoConfig): { top: string; left: string } {
-//   const topMap: Record<number, string> = {
-//     1: "1%",
-//     2: "22%",
-//     3: "62%",
-//     4: "82%",
-//   };
-//   const leftMap: Record<string, string> = {
-//     left:   "1%",
-//     center: "36%",
-//     right:  "69%",
-//   };
-
-//   if ((cfg.row === 2 || cfg.row === 3) && cfg.slot === "left")
-//     return { top: topMap[cfg.row], left: "0%" };
-//   if ((cfg.row === 2 || cfg.row === 3) && cfg.slot === "right")
-//     return { top: topMap[cfg.row], left: "74%" };
-
-//   return { top: topMap[cfg.row], left: leftMap[cfg.slot] };
-// }
 
 const SPARKS = Array.from({ length: 36 }, (_, i) => ({
   angle: (i / 36) * Math.PI * 2,
@@ -194,7 +168,6 @@ export function PhotoBurst({ message }: { name: string; message: string }) {
               background: "white",
               padding: "4px 4px 16px 4px",
               boxShadow: "0 8px 30px oklch(0 0 0 / 0.55)",
-              overflow: "hidden",
             }}>
               <img
                 src={PHOTOS[i]}
